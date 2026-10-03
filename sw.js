@@ -1,6 +1,6 @@
 // Network first so updates arrive straight away; falls back to cache when offline.
-const CACHE = 'logbook-v1';
-const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
+const CACHE = 'logbook-v2';
+const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './nunito.woff2'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
