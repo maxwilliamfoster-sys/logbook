@@ -35,6 +35,8 @@ html,body{margin:0;background:var(--paper);color:var(--ink)}
 body{font-family:var(--font);font-size:16px;line-height:1.4;font-weight:500;
   -webkit-font-smoothing:antialiased;padding-top:env(safe-area-inset-top)}
 button{font:inherit;color:inherit;cursor:pointer}
+html.demo{scrollbar-width:none}
+html.demo::-webkit-scrollbar{display:none}
 .wrap{max-width:560px;margin:0 auto;padding:18px 16px 130px}
 
 /* header */
@@ -208,14 +210,34 @@ function seed() {
   ];
   return { v: 1, unit: 'kg', routines, active: routines[0].id, sessions: [], drafts: {} };
 }
+// ?demo shows sample history for the download page preview and never saves anything
+const DEMO = new URLSearchParams(location.search).has('demo');
+function demoState() {
+  const s = seed();
+  const ago = n => new Date(Date.now() - n * 864e5).toISOString();
+  const e = (name, sets) => ({ key: keyOf(name), name, sets: sets.map(([w, r]) => ({ w, r })) });
+  s.sessions = [{ id: uid(), date: ago(3), routine: 'Push', entries: [
+    e('Bench Press', [[60, 10], [60, 10], [60, 10]]),
+    e('Incline Dumbbell Press', [[22, 9], [22, 8], [22, 7]]),
+    e('Dumbbell Shoulder Press', [[18, 10], [18, 9], [18, 8]]),
+    e('Lateral Raise', [[10, 15], [10, 15], [10, 15]]),
+    e('Tricep Pushdown', [[30, 12], [30, 11], [30, 10]]),
+  ] }];
+  const push = s.routines[0];
+  s.drafts[push.id] = { started: Date.now(), touched: Date.now(), sets: { [push.ex[0].id]: [{ w: '62.5', r: '8', done: true }, { w: '', r: '', done: false }, { w: '', r: '', done: false }] } };
+  s.hideInstall = true;
+  return s;
+}
 function load() {
+  if (DEMO) return demoState();
   try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && s.v === 1 && Array.isArray(s.routines)) return s; } catch (e) {}
   return seed();
 }
 let S = load();
+if (DEMO) document.documentElement.classList.add('demo');
 let editing = false;
 let sheetKind = null;
-const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+const save = () => { if (DEMO) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
 
 const routine = () => S.routines.find(r => r.id === S.active) || S.routines[0];
 function draft(rid, create) {
@@ -509,6 +531,8 @@ function openSettings() {
       <p>Weight and reps never go up together. If you fall short twice in a row, it drops the weight about 10% so you can build back up. After a long break it eases you back in.</p>
       <p>The numbers are a ceiling, not a target to grind out. Stop a set when your form starts to slip.</p>
     </div></div>
+    <div class="group">Share</div>
+    <div class="list"><div class="setrow"><span>Send Logbook to a friend</span><a class="btn2" href="get/" style="text-decoration:none">Share</a></div></div>
     <div class="group">Your data</div>
     <div class="list">
       <div class="setrow"><span>Save a backup file</span><button class="btn2" data-act="export">Export</button></div>
@@ -754,7 +778,7 @@ $('scrim').addEventListener('click', closeSheet);
   if (changed) save();
 })();
 render();
-if ('serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if (!DEMO && 'serviceWorker' in navigator && location.protocol !== 'file:') navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
 </html>
